@@ -841,6 +841,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
     }
 
+    #[tracing::instrument(target="rga", name="construct_frame{stage}", skip_all)]
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);

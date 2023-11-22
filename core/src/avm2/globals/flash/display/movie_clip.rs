@@ -334,6 +334,7 @@ pub fn goto_and_play<'gc>(
 }
 
 /// Implements `gotoAndStop`.
+#[tracing::instrument(target="rga", skip_all)]
 pub fn goto_and_stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,

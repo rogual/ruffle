@@ -68,7 +68,7 @@ pub enum FramePhase {
 /// but this is needed to match Flash Player's output. There may
 /// still be lurking bugs, but the current code matches Flash's
 /// output exactly for two complex test cases (see `avm2/orphan_movie*`)
-#[instrument(level = "debug", skip_all)]
+#[instrument(target = "rga", skip_all)]
 pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
     let stage = context.stage;
 

@@ -325,6 +325,7 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
+    #[tracing::instrument(target = "rga", skip_all)]
     pub fn each_orphan_obj(
         context: &mut UpdateContext<'_, 'gc>,
         mut f: impl FnMut(DisplayObject<'gc>, &mut UpdateContext<'_, 'gc>),

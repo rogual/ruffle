@@ -2620,7 +2620,20 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     /// Construct objects placed on this frame.
+    #[tracing::instrument(
+        target="rga",
+        skip_all,
+    )]
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+
+        let class_object = self
+            .0
+            .read()
+            .avm2_class
+            .unwrap_or_else(|| context.avm2.classes().movieclip);
+
+        println!("// Constructing frame for {:?} \"{}\"", class_object.debug_class_name(), self.name());
+
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if context.is_action_script_3() && self.frames_loaded() >= 1 {
@@ -2629,18 +2642,29 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 self.allocate_as_avm2_object(context, (*self).into());
                 true
             } else {
+                //println!("object already constructed");
                 false
             };
 
             self.0.write(context.gc_context).unset_loop_queued();
 
+            //println!("is_load_frame = {:?}", is_load_frame);
+            //println!("placed_by_script = {:?}", self.placed_by_script());
+
             if needs_construction {
+                tracing::span!(target: "rga", tracing::Level::INFO, "needs_construction").in_scope(|| {
                 self.0
                     .write(context.gc_context)
                     .flags
                     .insert(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
+
+                tracing::span!(target: "rga", tracing::Level::INFO, "construct_as_avm2_object").in_scope(|| {
                 self.construct_as_avm2_object(context);
+                });
+                    
+                tracing::span!(target: "rga", tracing::Level::INFO, "on_construction_complete").in_scope(|| {
                 self.on_construction_complete(context);
+                });
                 // If we're in the load frame and we were constructed by ActionScript,
                 // then we want to wait for the DisplayObject constructor to run
                 // 'construct_frame' on children. This is observable by ActionScript -
@@ -2648,6 +2672,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // when we have children placed on the load frame, but 'this.getChildAt(0)'
                 // will return 'null' since the children haven't had their AVM2 objects
                 // constructed by `construct_frame` yet.
+                });
             } else if !(is_load_frame && self.placed_by_script()) {
                 let running_construct_frame = self
                     .0
@@ -2656,12 +2681,15 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                     .contains(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
                 // The supercall constructor for display objects is responsible
                 // for triggering construct_frame on frame 1.
+                tracing::span!(target: "rga", tracing::Level::INFO, "iterate children").in_scope(|| {
                 for child in self.iter_render_list() {
                     if running_construct_frame && child.object2().as_object().is_none() {
+                        println!("skip child: {}", child.name());
                         continue;
                     }
                     child.construct_frame(context);
                 }
+                });
             }
         }
     }

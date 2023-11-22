@@ -68,6 +68,8 @@ fn init() {
 
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::ACTIVE)
+        .with_ansi(false)
         .finish();
 
     #[cfg(feature = "tracy")]
@@ -155,6 +157,9 @@ fn shutdown() {
 
 fn main() -> Result<(), Error> {
     init();
+
+    tracing::info!("Pooper");
+    
     let opt = Opt::parse();
     let result = if opt.timedemo {
         time_demo::run_timedemo(opt)

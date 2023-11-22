@@ -64,11 +64,18 @@ pub fn initialize_for_allocator<'gc>(
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
+#[tracing::instrument(target = "rga", skip_all)]
 pub fn native_instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(dobj) = this.as_display_object() {
+        if let Some(clip) = dobj.as_movie_clip() {
+            println!("// Initializing \"{}\"", clip.name());
+        }
+    }
+
     activation.super_init(this, &[])?;
 
     if let Some(dobj) = this.as_display_object() {
